@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    /*triggers {
-        githubPush()
-    }*/
-
     environment {
         NETLIFY_SITE_ID = '675aebeb-e449-4991-bd92-2af3b901230c'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
@@ -12,6 +8,20 @@ pipeline {
     }
 
     stages {
+
+        stage('AWS') {
+            agent {
+                docker {
+                    image: 'amazon/aws-cli'
+                    args "--entrypoint=''"
+                }
+            }
+            steps {
+                sh '''
+                    aws --version
+                '''
+            }
+        }
 
         stage('Build') {
             agent {
