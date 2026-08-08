@@ -2,12 +2,34 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_SITE_ID = '675aebeb-e449-4991-bd92-2af3b901230c'
-        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+        //NETLIFY_SITE_ID = '675aebeb-e449-4991-bd92-2af3b901230c'
+        //NETLIFY_AUTH_TOKEN = credentials('netlify-token')
         REACT_APP_VERSION = "1.0.$BUILD_ID"
+        AWS_DEFAULT_REGION = 'us-east-2'
     }
 
     stages {
+
+        stage('Deploy to AWS') {
+            agent {
+                docker {
+                    image 'amazon/aws-cli'
+                    reuseNode true
+                    args "--entrypoint=''"
+                }
+            }
+            /*environment {
+                AWS_S3_BUCKET = 'learn-jenkins-202608061000'
+            }*/
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        aws --version
+                        aws ecs register-task-definition --cli-input-json file://aws/task-definition-prod.json
+                    '''
+                }
+            }
+        }
 
         stage('Build') {
             agent {
@@ -26,29 +48,8 @@ pipeline {
                     ls -la
                 '''
             }
-        }
-
-        stage('AWS') {
-            agent {
-                docker {
-                    image 'amazon/aws-cli'
-                    reuseNode true
-                    args "--entrypoint=''"
-                }
-            }
-            environment {
-                AWS_S3_BUCKET = 'learn-jenkins-202608061000'
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
-                    sh '''
-                        aws --version
-                        aws s3 sync build s3://$AWS_S3_BUCKET
-                    '''
-                }
-            }
-        }
-
+        }    
+/*
         stage('Tests') {
             parallel {
                 stage('Unit Test') {
@@ -93,7 +94,8 @@ pipeline {
                 } 
             }
         }
-
+*/
+/*
         stage('Deploy staging') {
             agent {
                 docker {
@@ -121,7 +123,7 @@ pipeline {
                 }
             }
         }
-
+*/
         /*stage('Approval') {
             steps {
                 timeout(time: 15, unit: 'MINUTES') {
@@ -130,6 +132,7 @@ pipeline {
             }
         }*/
 
+/*
         stage('Deploy prod') {
             agent {
                 docker {
@@ -158,4 +161,5 @@ pipeline {
             }
         }
     }    
+*/
 }
